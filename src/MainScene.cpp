@@ -24,6 +24,10 @@
  ****************************************************************************/
 
 #include "MainScene.h"
+#include "box2d/b2_body.h"
+#include "box2d/b2_fixture.h"
+#include "box2d/b2_polygon_shape.h"
+#include "physics-nodes/PhysicsSpriteBox2D.h"
 
 using namespace ax;
 
@@ -43,9 +47,8 @@ bool MainScene::init()
 {
     //////////////////////////////
     // 1. super init first
-    if (!Scene::init())
-    {
-        return false;
+    if (!Scene::initWithSize(Vec2{960, 640})) {
+      return false;
     }
 
     auto visibleSize = _director->getVisibleSize();
@@ -58,7 +61,7 @@ bool MainScene::init()
     //    you may modify it.
 
     // add a "close" icon to exit the progress. it's an autorelease object
-    auto closeItem = MenuItemImage::create("CloseNormal.png", "CloseSelected.png",
+    auto closeItem = MenuItemImage::create("assets/CloseNormal.png", "assets/CloseSelected.png",
                                            AX_CALLBACK_1(MainScene::menuCloseCallback, this));
 
     if (closeItem == nullptr || closeItem->getContentSize().width <= 0 || closeItem->getContentSize().height <= 0)
@@ -95,14 +98,16 @@ bool MainScene::init()
     //_eventDispatcher->addEventListenerWithSceneGraphPriority(_mouseListener, this);
 
     _keyboardListener                = EventListenerKeyboard::create();
-    _keyboardListener->onKeyPressed  = AX_CALLBACK_2(MainScene::onKeyPressed, this);
+    _keyboardListener->onKeyPressed  = [this](EventKeyboard::KeyCode code, Event* event) {
+        this->onKeyPressed(code, event);
+    };
     _keyboardListener->onKeyReleased = AX_CALLBACK_2(MainScene::onKeyReleased, this);
     _eventDispatcher->addEventListenerWithFixedPriority(_keyboardListener, 11);
 
     // add a label shows "Hello World"
     // create and initialize a label
 
-    auto label = Label::createWithTTF("Hello World", "fonts/Marker Felt.ttf", 24);
+    auto label = Label::createWithTTF("Hello World", "assets/fonts/Marker Felt.ttf", 24);
     if (label == nullptr)
     {
         problemLoading("'fonts/Marker Felt.ttf'");
@@ -117,7 +122,7 @@ bool MainScene::init()
         this->addChild(label, 1);
     }
     // add "HelloWorld" splash screen"
-    auto sprite = Sprite::create("HelloWorld.png"sv);
+    auto sprite = Sprite::create("assets/HelloWorld.png"sv);
     if (sprite == nullptr)
     {
         problemLoading("'HelloWorld.png'");
@@ -134,6 +139,27 @@ bool MainScene::init()
         addChild(drawNode);
 
         drawNode->drawRect(safeArea.origin + Vec2(1, 1), safeArea.origin + safeArea.size, Color4F::BLUE);
+    }
+
+    {
+        b2BodyDef bodyDef;
+        bodyDef.type = b2_kinematicBody;
+        bodyDef.bullet = true;
+        bodyDef.enabled = true;
+
+        auto *body = _b2World.CreateBody(&bodyDef);
+        b2PolygonShape box;
+        box.SetAsBox(1.0f, 1.0f);
+
+        b2FixtureDef fixtureDef;
+        fixtureDef.shape = &box;
+        body->CreateFixture(&fixtureDef);
+
+        auto *sprite = extension::PhysicsSpriteBox2D::create("assets/HelloWorld.png");
+        sprite->setB2Body(body);
+        sprite->setPTMRatio(32.0f);
+        sprite->setPosition(Vec2{100, 200});
+        addChild(sprite);
     }
 
     // scheduleUpdate() is required to ensure update(float) is called on every loop
@@ -202,6 +228,12 @@ void MainScene::onKeyReleased(EventKeyboard::KeyCode code, Event* event)
 
 void MainScene::update(float delta)
 {
+    auto *body = _b2World.GetBodyList();
+    while(body) {
+        body = body->GetNext();
+    }
+
+    _b2World.Step(1/60.0f, 6, 2);
     switch (_gameState)
     {
     case GameState::init:
@@ -274,6 +306,7 @@ void MainScene::menuCloseCallback(ax::Object* sender)
 }
 
 MainScene::MainScene()
+    : _b2World{b2Vec2{0.0f, -9.81f}}
 {
     _sceneID = ++s_sceneID;
     AXLOGD("Scene: ctor: #{}", _sceneID);

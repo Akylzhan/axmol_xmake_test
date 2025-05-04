@@ -28,6 +28,8 @@
 
 #include "axmol.h"
 
+#include "box2d/b2_world.h"
+
 class MainScene : public ax::Scene
 {
     enum class GameState
@@ -66,6 +68,7 @@ public:
     ~MainScene() override;
 
 private:
+    b2World _b2World;
     GameState _gameState                            = GameState::init;
     ax::EventListenerTouchAllAtOnce* _touchListener = nullptr;
     ax::EventListenerKeyboard* _keyboardListener    = nullptr;

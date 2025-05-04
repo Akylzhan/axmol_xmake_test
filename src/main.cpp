@@ -22,18 +22,22 @@
  THE SOFTWARE.
  ****************************************************************************/
 
- #include "AppDelegate.h"
- #include "cocos2d.h"
- 
- #include <stdlib.h>
- #include <stdio.h>
- #include <unistd.h>
- #include <string>
- 
- int main(int argc, char** argv)
- {
-     // create the application instance
-     AppDelegate app;
-     return ax::Application::getInstance()->run();
- }
- 
+#include "AppDelegate.h"
+#include "cocos2d.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string>
+#include <unistd.h>
+
+namespace {
+std::unique_ptr<AppDelegate> appDelegate;
+}
+
+void axmol_wasm_app_exit() { appDelegate.reset(); }
+
+int main(int argc, char **argv) {
+  // create the application instance
+  appDelegate.reset(new AppDelegate());
+  return ax::Application::getInstance()->run();
+}

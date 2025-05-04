@@ -2,8 +2,15 @@ add_rules("mode.debug", "mode.release")
 
 add_rules("plugin.compile_commands.autoupdate", {outputdir = "$(builddir)"})
 
-set_languages("c++20")
-set_toolchains("clang")
+set_languages("c++23")
+
+if is_plat("linux") then
+    set_toolchains("clang")
+elseif is_plat("wasm") then
+    add_requires("emscripten 4.0.8")
+    add_requireconfs("emscripten.openssl", { system = true })
+    set_toolchains("emcc@emscripten")
+end
 
 includes("axmol")
 
@@ -11,11 +18,44 @@ target("axmol_test")
     set_kind("binary")
     add_files("src/*.cpp")
     add_deps("axmol")
-    set_warnings("allextra")
 
-    add_extrafiles("assets/fonts/*.ttf", "assets/*.png")
+    set_warnings("allextra", "pedantic")
+    add_cxxflags("-Wno-unused-parameter")
 
-    set_rundir("assets") -- workaround for loading assets
+    -- set_rundir("assets") -- workaround for loading assets
+
+    if is_mode("debug") then
+        set_policy("build.sanitizer.address", true)
+        set_policy("build.sanitizer.undefined", true)
+        set_policy("build.sanitizer.leak", true)
+    end
+
+    before_run(function(target)
+        local assets_symlink_path = path.join(target:targetdir(), "assets")
+        if not os.exists(assets_symlink_path) then
+            os.ln(path.absolute("assets"), assets_symlink_path)
+        end
+    end)
+
+    after_install(function(target)
+        -- copy assets
+    end)
+
+    if is_plat("wasm") then
+        add_ldflags(
+            "-sUSE_GLFW=3 "..
+            "-sASSERTIONS "..
+            "-sMIN_WEBGL_VERSION=2 "..
+            "-sGL_ENABLE_GET_PROC_ADDRESS "..
+            "--use-preload-cache "..
+            -- "-pthread -sPTHREAD_POOL_SIZE=4 ".. -- needs dependencies to compile with -pthread
+            "-sFORCE_FILESYSTEM=1 -sFETCH=1 "..
+            "-lidbfs.js "..
+            "--shell-file axmol/core/platform/wasm/shell_minimal.html",
+            {expand = false}
+        )
+        add_values("wasm.preloadfiles", "assets", "./$(builddir)/$(plat)/$(arch)/$(mode)/axslc@/") -- targetdir
+    end
 --
 -- If you want to known more usage about xmake, please see https://xmake.io
 --
