@@ -23,12 +23,6 @@
  ****************************************************************************/
 
 #include "AppDelegate.h"
-#include "cocos2d.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string>
-#include <unistd.h>
 
 namespace {
 std::unique_ptr<AppDelegate> appDelegate;

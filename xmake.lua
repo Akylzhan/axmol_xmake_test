@@ -17,14 +17,15 @@ includes("axmol")
 target("axmol_test")
     set_kind("binary")
     add_files("src/*.cpp")
-    add_deps("axmol")
 
     set_warnings("allextra", "pedantic")
-    add_cxxflags("-Wno-unused-parameter")
 
     -- set_rundir("assets") -- workaround for loading assets
 
-    if is_mode("debug") then
+    if is_mode("release") then
+        set_optimize("fastest")
+        set_policy("build.optimization.lto", true)
+    elseif is_mode("debug") then
         set_policy("build.sanitizer.address", true)
         set_policy("build.sanitizer.undefined", true)
         set_policy("build.sanitizer.leak", true)
@@ -56,6 +57,8 @@ target("axmol_test")
         )
         add_values("wasm.preloadfiles", "assets", "./$(builddir)/$(plat)/$(arch)/$(mode)/axslc@/") -- targetdir
     end
+
+    add_deps("axmol")
 --
 -- If you want to known more usage about xmake, please see https://xmake.io
 --

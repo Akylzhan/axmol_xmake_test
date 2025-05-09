@@ -142,24 +142,32 @@ bool MainScene::init()
     }
 
     {
-        b2BodyDef bodyDef;
-        bodyDef.type = b2_kinematicBody;
-        bodyDef.bullet = true;
-        bodyDef.enabled = true;
+      b2BodyDef bodyDef;
+      bodyDef.type =  b2_dynamicBody;//b2_kinematicBody;
+      bodyDef.bullet = true;
+      bodyDef.enabled = true;
 
+      b2PolygonShape box;
+      box.SetAsBox(1.0f, 1.0f);
+
+      b2FixtureDef fixtureDef;
+      fixtureDef.shape = &box;
+
+      auto add_body = [this, bodyDef, fixtureDef](float x, float y) {
         auto *body = _b2World.CreateBody(&bodyDef);
-        b2PolygonShape box;
-        box.SetAsBox(1.0f, 1.0f);
-
-        b2FixtureDef fixtureDef;
-        fixtureDef.shape = &box;
         body->CreateFixture(&fixtureDef);
 
-        auto *sprite = extension::PhysicsSpriteBox2D::create("assets/HelloWorld.png");
+        auto *sprite =
+            extension::PhysicsSpriteBox2D::create("assets/CloseNormal.png");
         sprite->setB2Body(body);
         sprite->setPTMRatio(32.0f);
-        sprite->setPosition(Vec2{100, 200});
+        sprite->setPosition(Vec2{x, y});
         addChild(sprite);
+      };
+
+      for (int i = 0; i < 1000; ++i) {
+        add_body(i, i);
+      }
     }
 
     // scheduleUpdate() is required to ensure update(float) is called on every loop
